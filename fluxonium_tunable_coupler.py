@@ -242,6 +242,42 @@ class FluxoniumTunableCouplerFloating(base.QubitBaseClass, serializers.Serializa
             * phi_b_mat[0, 1]
             * (coupler_plus + coupler_minus_sum)
         )
+        
+    def _J_seperate(self, evals_a, phi_a_mat, evals_b, phi_b_mat, evals_minus, phi_minus_mat):
+        coupler_minus_sum = sum(
+            phi_minus_mat[0, n] ** 2
+            * (
+                1.0 / (evals_a[0] + evals_minus[n] - evals_a[1] - evals_minus[0])
+                + 1.0 / (evals_b[0] + evals_minus[n] - evals_b[1] - evals_minus[0])
+                + 1.0 / (evals_a[1] + evals_minus[n] - evals_a[0] - evals_minus[0])
+                + 1.0 / (evals_b[1] + evals_minus[n] - evals_b[0] - evals_minus[0])
+            )
+            for n in range(1, self.fluxonium_minus_truncated_dim)
+        )
+        omega_p = self.h_o_plus().E_osc
+        ECp = self.h_o_plus_charging_energy()
+        ELc = self.EL_tilda() / 4
+        coupler_plus = -np.sqrt(2.0 * ECp / ELc) * (
+            1.0 / (evals_a[0] + omega_p - evals_a[1])
+            + 1.0 / (evals_b[0] + omega_p - evals_b[1])
+            + 1.0 / (evals_a[1] + omega_p - evals_a[0])
+            + 1.0 / (evals_b[1] + omega_p - evals_b[0])
+        )
+        return (
+            0.5
+            * (self.ELa / 2)
+            * (self.ELb / 2)
+            * phi_a_mat[0, 1]
+            * phi_b_mat[0, 1]
+            * (coupler_plus),
+            0.5
+            * (self.ELa / 2)
+            * (self.ELb / 2)
+            * phi_a_mat[0, 1]
+            * phi_b_mat[0, 1]
+            * (coupler_minus_sum)
+        )
+        
 
     def schrieffer_wolff(self):
         (
@@ -1666,6 +1702,19 @@ class FluxoniumTunableCouplerFloating(base.QubitBaseClass, serializers.Serializa
             phi_minus_mat,
         ) = self._generate_fluxonia_evals_phi_for_SW()
         return self._J(
+            evals_a, phi_a_mat, evals_b, phi_b_mat, evals_minus, phi_minus_mat
+        )
+        
+    def J_eff_seperate(self):
+        (
+            evals_a,
+            phi_a_mat,
+            evals_b,
+            phi_b_mat,
+            evals_minus,
+            phi_minus_mat,
+        ) = self._generate_fluxonia_evals_phi_for_SW()
+        return self._J_seperate(
             evals_a, phi_a_mat, evals_b, phi_b_mat, evals_minus, phi_minus_mat
         )
 
