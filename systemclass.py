@@ -140,7 +140,7 @@ class SNAIL():
         H = np.real(U_dag @ H @ U)
         return (H - H[0][0] * np.identity(dimension))[:self.truncated_dim, :self.truncated_dim], charge[
                                                                                                  :self.truncated_dim,
-                                                                                                 :self.truncated_dim]
+                                                                                                 :self.truncated_dim],
 
 
 class SNAIL_sweep(SNAIL):

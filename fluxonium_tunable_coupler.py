@@ -1754,6 +1754,14 @@ class FluxoniumTunableCouplerFloating(base.QubitBaseClass, serializers.Serializa
         self.flux_a = flux_a
         self.flux_b = flux_b
         return self._evals_zeroed()[3]
+    
+    def _cost_function_just_shift_positionsyw(self, fluxs):
+        """For efficiency we make the approximation that the flux shifts are equivalent"""
+        fluxa = fluxs[0]
+        fluxb = fluxs[1]
+        self.flux_a = fluxa
+        self.flux_b = fluxb
+        return self._evals_zeroed()[3]
 
     def find_flux_shift_exact(self, epsilon=1e-4):
         """near the off position, we want to find the exact qubit fluxes necessary to
@@ -1766,12 +1774,29 @@ class FluxoniumTunableCouplerFloating(base.QubitBaseClass, serializers.Serializa
         result = minimize(
             self._cost_function_just_shift_positions,
             x0=np.array([0.5 + flux_shift_a_seed]),
-            bounds=((0.5, 0.6),),
+            bounds=((0.5, 0.6),()),
             tol=epsilon,
-            options={"disp": True},
+            options={"disp": True},method='Nelder-Mead'
         )
         assert result.success
         return result.x[0] - 0.5
+    
+    def find_flux_shift_exactyw(self, epsilon=1e-4):
+        """near the off position, we want to find the exact qubit fluxes necessary to
+        put the qubits at their sweet spots. To do this we acknowledge that the qubits
+        are (nearly) uncoupled, therefore each excited state is nearly a product state.
+        Thus if we vary the qubit fluxes and minimize the excitation energies, we
+        should be able to place both qubits at their sweet spots independently"""
+
+        result = minimize(
+            self._cost_function_just_shift_positionsyw,
+            x0=np.array([0.5,  0.5]),
+            bounds=((0.4, 0.6),(0.4, 0.6)),
+            tol=epsilon,
+            options={"disp": True},method='Nelder-Mead'
+        )
+        assert result.success
+        return result.x
 
     def find_off_position_and_flux_shift_exact(self, epsilon=1e-4):
         (
