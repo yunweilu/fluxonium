@@ -40,8 +40,6 @@ from scqubits.utils.spectrum_utils import (
 
 from scqubits.core.namedslots_array import NamedSlotsNdarray
 
-import chencrafts.toolbox as tb
-
 class FluxoniumTunableCouplerFloating(base.QubitBaseClass, serializers.Serializable):
     def __init__(
         self,
