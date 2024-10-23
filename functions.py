@@ -26,6 +26,47 @@ def annihilation(dim):
 def creation(dim):
     return np.diag(np.sqrt(np.arange(1,dim)),-1)
 
+def fluxonium_paras(Ec, EL, EJ, phi_ex):
+    # Define the potential function
+    def potential(phi, EL, EJ, phi_ex):
+        return 0.5 * EL * phi**2 - EJ * np.cos(phi - phi_ex)
+
+    # Function to find the minimum
+    def find_minimum(EL, EJ, phi_ex, initial_guess=0):
+        phi_ex = phi_ex*2*np.pi
+        result = sci.optimize.minimize(potential, x0=initial_guess, args=(EL, EJ, phi_ex))
+        return result.x  # The value of phi at the minimum
+
+    # Example usage
+
+    phi_min = find_minimum(EL, EJ, phi_ex)
+    phi_ex = phi_ex*2*np.pi
+
+    beta = EJ/EL
+    sdim = 20
+    phi_min = find_minimum(EL,EJ,phi_ex)
+    # potential expansion around minimum
+    c2 = beta*np.cos(phi_min - phi_ex) + 1
+    c3 = -beta*np.sin(phi_min-phi_ex)
+    c4 = -beta*np.cos(phi_min-phi_ex)
+    omega_s = np.sqrt(8*c2*EL*Ec)
+    phi_zpf = np.power(2*Ec/(EL*c2),1/4)
+    g2 = EL * phi_zpf**2*c2/2
+    g3 = EL * phi_zpf ** 3 * c3 / 3 / 2
+    s = annihilation(sdim)
+    sd = creation(sdim)
+    x2 = np.matmul(s+sd,s+sd)
+    phi_op = phi_zpf*(s+sd)+(phi_min)*np.identity(sdim)
+    Hs =(omega_s * np.matmul(sd,s)- EL*(beta*sci.linalg.cosm(phi_op-(phi_ex)*np.identity(sdim))- 1/2*phi_op@phi_op)- g2*x2)
+    charge_op = -1j*(s-sd)/(2*phi_zpf)
+    energy0,U = np.linalg.eigh(Hs)
+    energy0 = energy0 - energy0[0]
+    Ud = U.transpose().conjugate()
+    Hs = Ud@Hs@U
+    Hs = Hs - Hs[0,0]*np.identity(sdim)
+    phase_op, charge_op = Ud@phi_op@U,Ud@charge_op@U
+    return Hs,phase_op, omega_s, phi_zpf, g3
+
 def SNAIL(phi_ex,beta,N,Ej,Ec,sdim):
     phi_ex = phi_ex*2*np.pi
     def Us_min(phi_ex):
